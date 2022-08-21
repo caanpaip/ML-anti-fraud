@@ -1,4 +1,4 @@
-# ML_case
+# ML Anti-Fraud
 
 Machine learning project: MELI anti-fraud
 
