@@ -5,7 +5,7 @@ Machine learning project: MELI anti-fraud
 - [data](./data): Contem os dados
 - [docs](./docs)
 - [notebooks](./notebooks)
-- [src](./src)
+- [src](./src): Scripts
 - [tools](./tools)
   
 > Developers:
