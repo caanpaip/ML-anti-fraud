@@ -7,4 +7,4 @@ if sys.platform=='win32':
 
 elif sys.platform=='linux':
     ## path in Linux machine
-    root = "defined"
+    root = "/home/caanpaip/Documents/GitHub/ML-anti-fraud"
