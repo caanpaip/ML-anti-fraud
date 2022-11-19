@@ -1,6 +1,7 @@
 # dev: Carlos Andres Palechor Ipia
 
 import pandas as pd
+import numpy as np
 import os
 from unicodedata import normalize
 from optbinning import OptimalBinning
@@ -76,8 +77,8 @@ def metric_evaluation(df, probability, label, quantil):
     
     """
 
-    ## Sort by probability column
-    df_sort = df.sort_values( probability ,ascending=True).reset_index(drop=True)
+    ## Sort by probability column and index created.
+    df_sort = df.reset_index().sort_values( by = [probability,'index'] ,ascending=True).drop("index", axis=1).reset_index(drop=True)
     ## Creating the index column
     df_sort = df_sort.reset_index()
     ## Defining the quantiles using the cut pandas function
@@ -142,7 +143,27 @@ def list_subset_words(Lista,list_words):
 
     return [i for n, i in enumerate(list_subsets) if i not in list_subsets[:n]]
 
-def binning_var_model(df, variable, label, dtype_, monotonic, save_path_pkl = None, verbose = False ):
+
+def exclude_words(ls:list, words:list)->list:
+
+    """
+    Return list excluding elements with containd the word in the list words
+
+        ls:= List to exclude elements
+        words: List with word to search and exclude elements.
+
+
+    """
+
+    ls_exclude = ls.copy()
+
+    for word in words:
+
+        ls_exclude = [x for x in ls_exclude if word not in x]
+
+    return ls_exclude
+
+def binning_var_model(df, variable, label, dtype_, monotonic, save_path_pkl = None, verbose = False, optimal_binning = True ):
 
     """ 
     Retunr object to contruct the binning.
@@ -150,11 +171,13 @@ def binning_var_model(df, variable, label, dtype_, monotonic, save_path_pkl = No
         df:= Dataframe with data
         variable:= Variable in dataframe to compute de metrics.
         dtype:= 'numerical' if the variable is numerical or ordinal variable.
-                'Categorical' if the variable is nominal variable.
+                'categorical' if the variable is nominal variable.
         label:= Target column with values 0 and 1.
-        monotonic:= True to compute binning with WoE asceding or descending.
-                    False to auto
-        save_path_pkl:= Path to save the binning model
+        monotonic:= True to compute binning with WoE asceding or descending. Only to numeric variable
+                    False to auto.
+        save_path_pkl:= Path to save the binning model.
+        optimal_binning:= True to compute the WoE using the optimal aprox. 
+                           False to compute the WoE using the unique values of variable. Mixing categorias if there is one or more categories without event ou non events. (Only to categorial variables.) 
 
 
     Obs: This functions use the optbinning to compute the metrics.
@@ -166,8 +189,11 @@ def binning_var_model(df, variable, label, dtype_, monotonic, save_path_pkl = No
 
     solver = "cp" if dtype_=='numerical' else "mip"
     monotonic_trend = 'auto_asc_desc' if monotonic == True and dtype_=="numerical"  else "auto"
+    user_bins =  np.array([[x] for x in df[variable].unique().tolist() ], dtype=object ) if optimal_binning==False and dtype_!="numerical"  else None
+
+
     ## using library to compute 
-    optb = OptimalBinning(name=variable, dtype=dtype_ , solver=solver, monotonic_trend = monotonic_trend)
+    optb = OptimalBinning(name=variable, dtype=dtype_ , solver=solver, monotonic_trend = monotonic_trend, user_splits = user_bins )
     optb.fit( df[variable].values , df[label])
 
     if save_path_pkl!=None:
@@ -187,7 +213,7 @@ def binning_var_model(df, variable, label, dtype_, monotonic, save_path_pkl = No
 
 
 
-def WOE_IV(df, variable, dtype_, label, monotonic = True, save_path_pkl = None):
+def WOE_IV(df, variable, dtype_, label, monotonic = True, save_path_pkl = None, optimal_binning = False ):
 
     """
     Retunr WOE, IV and KS of variable in dataset.
@@ -208,7 +234,7 @@ def WOE_IV(df, variable, dtype_, label, monotonic = True, save_path_pkl = None):
     """
 
     ## using library to compute 
-    optb = binning_var_model(df, variable, label, dtype_, monotonic, save_path_pkl )
+    optb = binning_var_model(df =df , variable = variable , label= label, dtype_ = dtype_ , monotonic = monotonic, save_path_pkl = save_path_pkl, verbose = False, optimal_binning = optimal_binning  )
     ## Creating table 
     binning_table = optb.binning_table
     df_group = binning_table.build(add_totals=False)
@@ -228,7 +254,38 @@ def WOE_IV(df, variable, dtype_, label, monotonic = True, save_path_pkl = None):
     ## Ordering the columns
     df_group = df_group[['variable','Bin','Count','Event','Non-event','%_Event','%_Non-event','Event rate',"WoE","IV",'IV_var',"KS"]]
 
+
     return df_group
+
+
+def encode_woe_var_transform(df, variable, opt_model_fitted ):
+
+    """
+    Return dataframe with new columns using the model fitted.
+
+        df:= Dataframe with columns to transform
+        variable:= Variable in dataframe to compute de metrics.
+        opt_model_fitted:= Model obtained of 'binning_var_model' function and load using joblib.load(path_model).
+    
+    
+    """
+    df_ = df.copy()
+
+    ## model fitted
+    opt = opt_model_fitted
+    ## Creating WoE table of model fitted
+    df_binning = opt.binning_table.build(add_totals=False)
+    ## Extracing WoE of missing category using the last row in dataframe
+    woe_missing = -df_binning.loc[df_binning.shape[0]-1:,:].reset_index(drop=True)["WoE"][0]
+    # Creating encoding using WoE
+    df_[f"{variable}_bins"] = opt.transform(df_[variable], metric="indices", metric_missing= -1)
+    df_[f"{variable}_bins"] = df_[f"{variable}_bins"].astype("category")
+    df_[f"{variable}_cat"] = opt.transform(df_[variable], metric="bins")
+    df_[f"{variable}_WoE"] = opt.transform(df_[variable], metric="woe", metric_missing = woe_missing )
+    ## Transforming the WoE, If WoE>0 the percentage of event is greather than the Non-event
+    df_[f"{variable}_WoE"] = -df_[f"{variable}_WoE"]
+
+    return df_
 
 
 def encode_woe_var(df, variable, label, dtype_, monotonic = True, save_path_pkl=None ):
@@ -253,20 +310,13 @@ def encode_woe_var(df, variable, label, dtype_, monotonic = True, save_path_pkl=
 
     """
     dff = df.copy()
-
+    ## fit with variable 
     opt = binning_var_model(dff, variable, label, dtype_, monotonic, save_path_pkl )
-    df_binning = opt.binning_table.build(add_totals=False)
-    ## Extracing WoE of missing category using the last row in dataframe
-    woe_missing = -df_binning.loc[df_binning.shape[0]-1:,:].reset_index(drop=True)["WoE"][0]
-    # Creating encoding using WoE
-    dff[f"{variable}_bins"] = opt.transform(dff[variable], metric="indices", metric_missing= -1)
-    dff[f"{variable}_bins"] = dff[f"{variable}_bins"].astype("category")
-    dff[f"{variable}_cat"] = opt.transform(dff[variable], metric="bins")
-    dff[f"{variable}_WoE"] = opt.transform(dff[variable], metric="woe", metric_missing = woe_missing )
-    ## Transforming the WoE, If WoE>0 the percentage of event is greather than the Non-event
-    dff[f"{variable}_WoE"] = -dff[f"{variable}_WoE"]
+    ## Creating tranformed columns
+    dff = encode_woe_var_transform(dff, variable, opt )
 
     return dff
+
 
 def chi_square_test(df, var_cat_1, var_cat_2 ):
 
