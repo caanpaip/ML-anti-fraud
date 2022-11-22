@@ -213,7 +213,7 @@ def binning_var_model(df, variable, label, dtype_, monotonic, save_path_pkl = No
 
 
 
-def WOE_IV(df, variable, dtype_, label, monotonic = True, save_path_pkl = None, optimal_binning = False ):
+def WOE_IV(df, variable, dtype_, label, monotonic = True, save_path_pkl = None, optimal_binning = True ):
 
     """
     Retunr WOE, IV and KS of variable in dataset.
@@ -242,8 +242,9 @@ def WOE_IV(df, variable, dtype_, label, monotonic = True, save_path_pkl = None, 
     df_group["WoE"] = df_group["WoE"].apply(lambda x: -x if x!="" else x)
     ## Extracting the IV value
     df_group["IV_var"] = df_group["IV"].sum()
+    df_group["%_Count"] = 100*df_group["Count"]/df_group["Count"].sum()
     ## Selecting the usefull columns
-    df_group = df_group[['Bin','Count','Non-event','Event','Event rate',"WoE","IV",'IV_var']]
+    df_group = df_group[['Bin','%_Count','Count','Non-event','Event','Event rate',"WoE","IV",'IV_var']]
     ## computong the percentage of event or non-event by line
     df_group['%_Event'] = 100*df_group['Event']/df_group['Event'].sum()
     df_group['%_Non-event'] = 100*df_group['Non-event']/df_group['Non-event'].sum()
@@ -252,7 +253,7 @@ def WOE_IV(df, variable, dtype_, label, monotonic = True, save_path_pkl = None, 
     ## Creating column with the variable name.
     df_group["variable"] = variable
     ## Ordering the columns
-    df_group = df_group[['variable','Bin','Count','Event','Non-event','%_Event','%_Non-event','Event rate',"WoE","IV",'IV_var',"KS"]]
+    df_group = df_group[['variable','Bin','%_Count','Count','Event','Non-event','%_Event','%_Non-event','Event rate',"WoE","IV",'IV_var',"KS"]]
 
 
     return df_group
