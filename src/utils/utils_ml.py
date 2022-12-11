@@ -109,7 +109,9 @@ def metric_evaluation(df, probability, label, quantil):
     ## Creating the metrics 
     df_group['recall'] = df_group['TP']/(df_group['TP'] + df_group['FN'])
     df_group['precision'] = df_group['TP']/(df_group['TP'] + df_group['FP'])
-    df_group['specificity'] = df_group['TN']/(df_group['TN'] + df_group['FP'])
+    # df_group['specificity'] = df_group['TN']/(df_group['TN'] + df_group['FP'])
+    df_group["BER"] =  0.5*( df_group['FP']/(df_group['TN'] + df_group['FP']) + df_group['FN']/(df_group['TP'] + df_group['FN']) )
+    df_group["cost"] =  (10*df_group['FN'] + df_group['FP'])/(df_group['FN']+df_group['TN']+df_group['FP']+df_group['TP'])
     ## Metrics to positive values label=1
     df_group['F1'] = 2*(df_group['precision']*df_group['recall'])/((df_group['precision']+df_group['recall']))
     df_group['F2'] = 5*(df_group['precision']*df_group['recall'])/((4*df_group['precision']+df_group['recall']))
