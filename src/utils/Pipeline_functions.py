@@ -191,7 +191,8 @@ def df_features_cat(df, path_pickle_transf ):
     
     try:
         df_2_model_cat = df_woe_bins_features[ cat_features + ["fraude"] ]
-    except:
+    except Exception as e:
+        print(e)
         df_2_model_cat = df_woe_bins_features[ cat_features ]
 
 

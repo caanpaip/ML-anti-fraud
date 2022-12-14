@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics import precision_recall_curve, roc_curve, auc, confusion_matrix, make_scorer
+from sklearn.metrics import precision_recall_curve, roc_curve, auc, confusion_matrix
 from sklearn.model_selection import train_test_split
 
 
