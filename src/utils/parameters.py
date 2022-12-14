@@ -1,4 +1,5 @@
 import sys
+import platform
 
 ## Parameters
 if sys.platform=='win32':
@@ -9,11 +10,20 @@ if sys.platform=='win32':
     features_path = "c:\\Users\\caanp\\OneDrive\\Documents\\repositories\\ML-anti-fraud\\src\\features"
 
 elif sys.platform=='linux':
-    ## path in Linux machine
-    root = "/home/caanpaip/Documents/GitHub/ML-anti-fraud"
-    data_path = "/home/caanpaip/Documents/GitHub/ML-anti-fraud/data"
-    model_path = "/home/caanpaip/Documents/GitHub/ML-anti-fraud/models"
-    features_path = "/home/caanpaip/Documents/GitHub/ML-anti-fraud/src/features"
+
+    if platform.node() == 'pilu':
+        ## path in Linux machine in windows
+        root = "/home/caanpaip/documents/repositories/ML-anti-fraud"
+        data_path = "/home/caanpaip/documents/repositories/ML-anti-fraud/data"
+        model_path = "/home/caanpaip/documents/repositories/ML-anti-fraud/models"
+        features_path = "/home/caanpaip/documents/repositories/ML-anti-fraud/src/features"
+
+    else:
+        ## path in Linux machine
+        root = "/home/caanpaip/Documents/GitHub/ML-anti-fraud"
+        data_path = "/home/caanpaip/Documents/GitHub/ML-anti-fraud/data"
+        model_path = "/home/caanpaip/Documents/GitHub/ML-anti-fraud/models"
+        features_path = "/home/caanpaip/Documents/GitHub/ML-anti-fraud/src/features"
 
 
 cols_rg_model = ['n_boolean_bins_1',
