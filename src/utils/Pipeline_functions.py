@@ -206,6 +206,6 @@ def scoring_with_cat( df , path_pickle_transf = parameters.features_path , path_
     ## chamando o modelo do catboost salvo no pkl
     modelo_cat = joblib.load( os.path.join( path_model , f"model_cat.pkl") )
     # scorando usando o cat model
-    df_['proabability'] = modelo_cat.predict_proba(df_cat)[:,1]
+    df_['probability'] = modelo_cat.predict_proba(df_cat)[:,1]
 
     return df_
